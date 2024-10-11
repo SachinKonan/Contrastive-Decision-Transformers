@@ -522,6 +522,7 @@ from mingpt.utils import rvs
 class GPT_Rotation(GPT):
     def __init__(self, config):
         super(GPT_Rotation, self).__init__(config)
+        # for each return bin, we initialize a random rotation matrix derived from the bin mean, this is num_bins x hidden_size x hidden_size
         self.rotation = torch.from_numpy(
             np.concatenate(
                 [rvs(config.n_embd, mean, std)[np.newaxis, ...] for mean, std in config.bins], axis=0
@@ -534,7 +535,10 @@ class GPT_Rotation(GPT):
 
     def embed_state_rot(self, states, digitized):
         state_embeddings = self.state_encoder(states.reshape(-1, 4, 84, 84).type(torch.float32).contiguous())
-        state_embeddings = state_embeddings.reshape(states.shape[0], states.shape[1], self.config.n_embd)
+        state_embeddings = state_embeddings.reshape(states.shape[0], states.shape[1], self.config.n_embd) # BxTxn_embd
+        # self.parse_digitized(digitized - 1) -> BxTx1, representing the bin indices
+        # self.rotation[self.parse_digitized(digitized - 1)].squeeze(2) -> BxTxn_embdxn_embd
+        # below we multiply each state vector by a rotation matrix (the rotation matrix is selected from n-"bin" choices using returns)
         return torch.einsum('ijkl,ijl->ijk', self.rotation[self.parse_digitized(digitized - 1)].squeeze(2), state_embeddings)
 
     def embed_action_rot(self, actions, digitized):
