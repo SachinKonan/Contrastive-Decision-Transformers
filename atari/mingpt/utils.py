@@ -69,6 +69,7 @@ def sample(model, x, steps, temperature=1.0, sample=False, top_k=None, actions=N
     return x
 
 def rvs(dim, loc, scale, size=1, random_state=None):
+    """ Derived from StackOverflow: https://stackoverflow.com/a/38426785"""
     if random_state is None:
         random_state = np.random.mtrand._rand
     elif isinstance(random_state, np.integer):
